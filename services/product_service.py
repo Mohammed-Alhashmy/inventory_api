@@ -31,7 +31,7 @@ class ProductService:
         connect = sqlite3.connect(self.db_path)
         cr = connect.cursor()
 
-        cr.execute('SELECT id, name, price, stock, FROM products')
+        cr.execute('SELECT id, name, price, stock FROM products')
         rows = cr.fetchall()
         connect.close()
 
@@ -45,4 +45,29 @@ class ProductService:
                 "stock": row[3]
             })
         return products
-    
+
+    def update_stock(self, product_id, amount_change):
+
+        connect = sqlite3.connect(self.db_path)
+        cr = connect.cursor()
+
+        cr.execute('SELECT stock FROM products WHERE id = ?', (product_id,))
+        result = cr.fetchone()
+
+        if not result :
+            connect.close()
+            raise ValueError(f"Product with ID {product_id} dose not exist.")
+
+        current_stock = result[0]
+        new_stock = current_stock + amount_change
+
+        if new_stock < 0:
+            connect.close()
+            raise ValueError(f"Insufficient stock! Current stock {current_stock}")
+
+        cr.execute('UPDATE products SET stock = ? WHERE id = ?', (new_stock, product_id))
+
+        connect.commit()
+        connect.close()
+        return new_stock
+        
