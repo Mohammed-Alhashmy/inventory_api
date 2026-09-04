@@ -55,6 +55,45 @@ class OrderService:
         finally:
             connect.close()
 
+    def get_order_summary(self, order_id):
+
+        connect = sqlite3.connect(self.db_path)
+        cr = connect.cursor()
+
+        cr.execute('SELECT id, customer_name, created_at, total_amount FROM orders WHERE id = ?', (order_id,))
+
+        order = cr.fetchone()
+
+        if not order :
+            raise ValueError (f"Order ID {order_id} Not available.")
+
+        cr.execute('''
+            SELECT products.name, order_items.quantity, order_items.price_at_sale
+            FROM order_items
+            JOIN products ON order_items.product_id = products.id
+            WHERE order_items.order_id = ?
+            ''', (order_id,))
+
+        items = cr.fetchall()
+
+        order_summary = {
+            "order_id" : order[0],
+            "customer_name" : order[1],
+            "created_at" : order[2],
+            "total_amount" : order[3],
+            "items" : []
+        }
+
+        for item in items:
+            order_summary["items"].append({
+                "product_name" : item[0],
+                "quantity" : item[1],
+                "price_at_sale" : item[2]
+            })
+
+        connect.close()
+        return order_summary
+    
 
 
         
